@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>八字命盤 · 排盤工具</title>
+<style>
+  :root{
+    --ink: #17140F;
+    --paper: #221E18;
+    --paper-2: #2A241C;
+    --cream: #EDE3CC;
+    --cream-dim: #B8AD95;
+    --seal: #A8321F;
+    --seal-dim: #7A2417;
+    --gold: #C9A25D;
+    --wood: #5B7B62;
+    --fire: #C1523A;
+    --earth: #A6844F;
+    --metal: #D4C08C;
+    --water: #4A7A9C;
+    --line: rgba(237,227,204,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(201,162,93,0.07), transparent 45%),
+      radial-gradient(ellipse at 100% 0%, rgba(168,50,31,0.06), transparent 40%),
+      var(--ink);
+    color:var(--cream);
+    font-family:"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+    line-height:1.65;
+    padding:0 0 60px;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:32px 20px 0;}
+  header.hero{
+    text-align:center;
+    padding:18px 0 28px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:28px;
+  }
+  .eyebrow{letter-spacing:0.35em;font-size:11px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;}
+  h1{font-family:"Noto Serif TC","Songti TC",serif;font-weight:700;font-size:34px;margin:0 0 8px;letter-spacing:0.08em;color:var(--cream);}
+  .sub{color:var(--cream-dim);font-size:14px;}
+
+  .card{background:linear-gradient(180deg, var(--paper), var(--paper-2));border:1px solid var(--line);border-radius:6px;padding:22px;margin-bottom:24px;}
+  .card h2{font-family:"Noto Serif TC","Songti TC",serif;font-size:16px;letter-spacing:0.12em;margin:0 0 16px;color:var(--gold);display:flex;align-items:center;gap:8px;}
+  .card h2::before{content:"";width:14px;height:1px;background:var(--gold);display:inline-block;}
+  .grid-input{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+  .grid-input.two{grid-template-columns:repeat(2,1fr);}
+  label{display:block;font-size:11px;color:var(--cream-dim);margin-bottom:5px;letter-spacing:0.05em;}
+  select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(--line);color:var(--cream);padding:9px 8px;border-radius:4px;font-size:14px;font-family:inherit;}
+  select:focus,input:focus{outline:2px solid var(--gold);outline-offset:1px;}
+  .gender-row{display:flex;gap:10px;margin-bottom:18px;}
+  .gender-btn{flex:1;text-align:center;padding:10px;border-radius:4px;border:1px solid var(--line);cursor:pointer;font-size:14px;color:var(--cream-dim);background:var(--ink);transition:all .15s;}
+  .gender-btn.active{border-color:var(--seal);color:var(--cream);background:rgba(168,50,31,0.18);}
+  button.submit{width:100%;padding:13px;border:none;border-radius:4px;background:var(--seal);color:var(--cream);font-size:15px;letter-spacing:0.15em;cursor:pointer;font-family:"Noto Serif TC","Songti TC",serif;transition:background .15s;}
+  button.submit:hover{background:var(--seal-dim);}
+  .err{color:var(--fire);font-size:12px;margin-top:8px;display:none;}
+
+  #result{display:none;}
+  .seal-badge{position:absolute;top:14px;right:6px;width:54px;height:54px;border-radius:6px;background:var(--seal);display:flex;align-items:center;justify-content:center;transform:rotate(-6deg);box-shadow:0 0 0 2px rgba(168,50,31,0.35), inset 0 0 0 1px rgba(237,227,204,0.4);font-family:"Noto Serif TC","Songti TC",serif;font-size:26px;color:var(--cream);opacity:0.92;}
+
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px;position:relative;}
+  .pillar-col{text-align:center;}
+  .pillar-label{font-size:11px;color:var(--cream-dim);letter-spacing:0.1em;margin-bottom:8px;}
+  .tg-label{font-size:11px;color:var(--gold);min-height:14px;margin:2px 0;letter-spacing:0.02em;}
+  .pillar-char{font-family:"Noto Serif TC","Songti TC",serif;font-size:30px;padding:10px 0;border:1px solid var(--line);border-radius:4px;margin-bottom:4px;background:rgba(0,0,0,0.15);}
+  .pillar-char.gan{color:var(--gold);}
+  .pillar-char.zhi{color:var(--cream);}
+  .pillar-elem{font-size:10px;color:var(--cream-dim);}
+  .read-dir{text-align:center;font-size:11px;color:var(--cream-dim);letter-spacing:0.3em;margin-bottom:14px;}
+  .daymaster-tag{text-align:center;font-size:12px;color:var(--gold);margin:14px 0 22px;letter-spacing:0.1em;}
+  .daymaster-tag b{color:var(--cream);font-size:14px;}
+
+  .elem-bars{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;}
+  .elem-row{display:flex;align-items:center;gap:10px;font-size:13px;}
+  .elem-name{width:34px;flex-shrink:0;color:var(--cream-dim);}
+  .elem-track{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;}
+  .elem-fill{height:100%;border-radius:4px;}
+  .elem-count{width:18px;text-align:right;color:var(--cream-dim);font-size:12px;}
+
+  .verdict{background:rgba(0,0,0,0.18);border-left:2px solid var(--seal);padding:12px 14px;border-radius:0 4px 4px 0;font-size:13.5px;color:var(--cream);margin-top:6px;}
+  .verdict b{color:var(--gold);}
+
+  .dayun-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;}
+  .dayun-item{flex:0 0 auto;text-align:center;border:1px solid var(--line);border-radius:4px;padding:10px 12px;background:rgba(0,0,0,0.15);min-width:64px;cursor:default;}
+  .dayun-item .age{font-size:10px;color:var(--cream-dim);margin-bottom:6px;}
+  .dayun-item .gz{font-family:"Noto Serif TC","Songti TC",serif;font-size:18px;color:var(--cream);}
+  .dayun-item .tg{font-size:10px;color:var(--gold);margin-top:4px;}
+
+  .dayun-detail{border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-bottom:8px;background:rgba(0,0,0,0.12);}
+  .dayun-detail .hd{display:flex;justify-content:space-between;font-size:13px;color:var(--gold);margin-bottom:6px;}
+  .dayun-detail .bd{font-size:13px;color:var(--cream);}
+
+  p.block{font-size:13.5px;color:var(--cream);margin:0 0 12px;}
+  p.block:last-child{margin-bottom:0;}
+  .subhead{font-size:12.5px;color:var(--gold);letter-spacing:0.05em;margin:14px 0 6px;}
+
+  .disclaimer{font-size:11px;color:var(--cream-dim);border-top:1px solid var(--line);padding-top:14px;margin-top:8px;}
+
+  @media (max-width:420px){
+    h1{font-size:26px;}
+    .grid-input{grid-template-columns:repeat(2,1fr);}
+    .pillar-char{font-size:22px;padding:8px 0;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">四柱 · 干支 · 命理</div>
+    <h1>八字命盤排盤</h1>
+    <div class="sub">輸入出生年月日時與性別，自動排出四柱、十神、五行與大運分析</div>
+  </header>
+
+  <div class="card">
+    <h2>出生資料</h2>
+    <div class="grid-input">
+      <div><label for="y">年</label><input type="number" id="y" value="2000" min="1900" max="2100"></div>
+      <div><label for="m">月</label><input type="number" id="m" value="1" min="1" max="12"></div>
+      <div><label for="d">日</label><input type="number" id="d" value="1" min="1" max="31"></div>
+      <div><label for="hh">時(0-23)</label><input type="number" id="hh" value="0" min="0" max="23"></div>
+    </div>
+    <div class="grid-input two">
+      <div><label for="mm">分(可略)</label><input type="number" id="mm" value="0" min="0" max="59"></div>
+      <div><label>&nbsp;</label><div style="font-size:12px;color:var(--cream-dim);padding-top:9px;">出生地時區:預設為北京/台北時間</div></div>
+    </div>
+    <label class="check-row" style="display:flex;align-items:center;gap:8px;margin-bottom:18px;cursor:pointer;">
+      <input type="checkbox" id="unknownHour" style="width:16px;height:16px;">
+      <span style="font-size:13px;color:var(--cream-dim);">不知道出生時辰（時柱以「吉時」表示，僅用年、月、日三柱分析）</span>
+    </label>
+    <label>性別</label>
+    <div class="gender-row">
+      <div class="gender-btn active" id="btn-female">女</div>
+      <div class="gender-btn" id="btn-male">男</div>
+    </div>
+    <button class="submit" id="calcBtn">排 盤</button>
+    <div class="err" id="errMsg">請確認日期是否正確（例如月份 1-12、日期在該月範圍內）。</div>
+  </div>
+
+  <div id="result">
+    <div class="card" style="position:relative;">
+      <h2>四柱命盤</h2>
+      <div class="seal-badge" id="sealChar">丁</div>
+      <div class="pillars" id="pillarsGrid"></div>
+      <div class="read-dir">← 由右至左閱讀：年　月　日　時 →</div>
+      <div class="daymaster-tag" id="dmTag"></div>
+
+      <h2 style="margin-top:22px;">五行分布</h2>
+      <div class="elem-bars" id="elemBars"></div>
+    </div>
+
+    <div class="card">
+      <h2>格局與合化分析</h2>
+      <div id="patternBox"></div>
+      <div class="subhead" style="margin-top:14px;">干支合化</div>
+      <div id="comboBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>喜忌與簡易分析</h2>
+      <div class="verdict" id="verdictBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>性格特質詳解</h2>
+      <div id="personalityBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>命盤建議</h2>
+      <div id="adviceBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>與此命盤之人相處建議</h2>
+      <div id="relationBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>大運分析</h2>
+      <div class="sub" id="dayunIntro" style="margin-bottom:14px;"></div>
+      <div id="dayunDetail"></div>
+    </div>
+
+    <div class="card">
+      <div class="disclaimer">
+        節氣時間採近似公式計算（日期精度，約±1天誤差），大運起運年齡為概略換算；十神對應地支時採該地支的本氣（主要藏干），未展開多重藏干。本工具僅供命理興趣參考，並非精準占卜或醫學╱心理診斷。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const GAN_ELEM = ['木','木','火','火','土','土','金','金','水','水'];
+const ZHI_ELEM = ['水','土','木','木','土','火','火','土','金','金','土','水'];
+const GAN_YY = [1,0,1,0,1,0,1,0,1,0]; // 1=陽 0=陰
+const ZHI_YY = [1,0,1,0,1,0,1,0,1,0,1,0];
+const SHENGXIAO = ['鼠','牛','虎','兔','龍','蛇','馬','羊','猴','雞','狗','豬'];
+const ELEM_COLOR = {'木':'var(--wood)','火':'var(--fire)','土':'var(--earth)','金':'var(--metal)','水':'var(--water)'};
+
+function cycleIndex(ganIdx, zhiIdx){
+  for(let n=0;n<60;n++){ if(n%10===ganIdx && n%12===zhiIdx) return n; }
+  return -1;
+}
+function julianDay(y,m,d){
+  const a = Math.floor((14-m)/12);
+  const y2 = y+4800-a;
+  const m2 = m+12*a-3;
+  return d + Math.floor((153*m2+2)/5) + 365*y2 + Math.floor(y2/4) - Math.floor(y2/100) + Math.floor(y2/400) - 32045;
+}
+function mod(n,m){ return ((n%m)+m)%m; }
+function yearGanZhi(year){ return { gan: mod(year-4,10), zhi: mod(year-4,12) }; }
+
+const C20 = [6.11,20.84,4.6295,19.4599,6.3826,21.4155,5.59,20.888,6.318,21.86,6.5,22.20,7.928,23.65,8.35,23.95,8.44,23.822,9.098,24.218,8.218,23.08,7.9,22.60];
+const C21 = [5.4055,20.12,3.87,18.73,5.63,20.646,4.81,20.1,5.52,21.04,5.678,21.37,7.108,22.83,7.5,23.13,7.646,23.042,8.318,23.438,7.438,22.36,7.18,21.94];
+function solarTermDate(year, termIndex){
+  const C = (year<2000) ? C20[termIndex] : C21[termIndex];
+  const y = mod(year,100);
+  const L = Math.floor(y/4);
+  let day = Math.floor(y*0.2422 + C) - L;
+  const month = Math.floor(termIndex/2)+1;
+  return new Date(year, month-1, day);
+}
+
+const JIE_SEQ = [
+  {t:2, zhi:2, yOff:0},{t:4, zhi:3, yOff:0},{t:6, zhi:4, yOff:0},{t:8, zhi:5, yOff:0},
+  {t:10,zhi:6, yOff:0},{t:12,zhi:7, yOff:0},{t:14,zhi:8, yOff:0},{t:16,zhi:9, yOff:0},
+  {t:18,zhi:10,yOff:0},{t:20,zhi:11,yOff:0},{t:22,zhi:0, yOff:0},{t:0, zhi:1, yOff:1},
+];
+function getBoundaries(baziYear){
+  return JIE_SEQ.map(j => ({ zhi:j.zhi, date: solarTermDate(baziYear+j.yOff, j.t) }));
+}
+
+const WUHU_BASE = [2,4,6,8,0];
+const WUSHU_BASE = [0,2,4,6,8];
+
+function computeBaZi(y,m,d,hh,mm,gender){
+  const hourKnown = (hh!==null && hh!==undefined && !isNaN(hh));
+  const effHH = hourKnown ? hh : 12; // 時辰未知時，以正午作為節氣邊界比對的中性預設值
+  const effMM = hourKnown ? mm : 0;
+  const birth = new Date(y, m-1, d, effHH, effMM);
+  const liChunThisYear = solarTermDate(y, 2);
+  let baziYear = (birth < liChunThisYear) ? y-1 : y;
+  const yGZ = yearGanZhi(baziYear);
+
+  const bounds = getBoundaries(baziYear);
+  let monthZhiIdx = bounds[0].zhi;
+  for(let i=0;i<bounds.length;i++){ if(birth >= bounds[i].date){ monthZhiIdx = bounds[i].zhi; } }
+  const monthOffsetMap = {2:0,3:1,4:2,5:3,6:4,7:5,8:6,9:7,10:8,11:9,0:10,1:11};
+  const monthOffset = monthOffsetMap[monthZhiIdx];
+  const monthGanIdx = mod(WUHU_BASE[mod(yGZ.gan,5)] + monthOffset, 10);
+
+  const jd = julianDay(y,m,d);
+  const dayGanIdx = mod(jd+9,10);
+  const dayZhiIdx = mod(jd+1,12);
+
+  let hourPillar = null;
+  if(hourKnown){
+    const hourZhiIdx = mod(Math.floor((hh+1)/2),12);
+    const hourGanIdx = mod(WUSHU_BASE[mod(dayGanIdx,5)] + hourZhiIdx, 10);
+    hourPillar = {gan:hourGanIdx, zhi:hourZhiIdx};
+  }
+
+  return {
+    birth, baziYear, hourKnown,
+    year:{gan:yGZ.gan, zhi:yGZ.zhi},
+    month:{gan:monthGanIdx, zhi:monthZhiIdx},
+    day:{gan:dayGanIdx, zhi:dayZhiIdx},
+    hour:hourPillar,
+    bounds
+  };
+}
+
+const GENERATES = {'木':'火','火':'土','土':'金','金':'水','水':'木'};
+const GENERATED_BY = {'火':'木','土':'火','金':'土','水':'金','木':'水'};
+const CONTROLS = {'木':'土','土':'水','水':'火','火':'金','金':'木'};
+const CONTROLLED_BY = {'土':'木','水':'土','火':'水','金':'火','木':'金'};
+
+function tenGodByElemYY(dayElem, dayYY, oElem, oYY){
+  const sameYY = dayYY===oYY;
+  if(oElem===dayElem) return sameYY? '比肩':'劫財';
+  if(GENERATES[dayElem]===oElem) return sameYY? '食神':'傷官';
+  if(GENERATES[oElem]===dayElem) return sameYY? '偏印':'正印';
+  if(CONTROLS[dayElem]===oElem) return sameYY? '偏財':'正財';
+  if(CONTROLS[oElem]===dayElem) return sameYY? '七殺':'正官';
+  return '-';
+}
+function tenGodGan(dayGanIdx, otherGanIdx){
+  return tenGodByElemYY(GAN_ELEM[dayGanIdx],GAN_YY[dayGanIdx],GAN_ELEM[otherGanIdx],GAN_YY[otherGanIdx]);
+}
+function tenGodZhi(dayGanIdx, zhiIdx){
+  return tenGodByElemYY(GAN_ELEM[dayGanIdx],GAN_YY[dayGanIdx],ZHI_ELEM[zhiIdx],ZHI_YY[zhiIdx]);
+}
+const TG_GROUP = {
+  '比肩':'比劫','劫財':'比劫',
+  '食神':'食傷','傷官':'食傷',
+  '正財':'財星','偏財':'財星',
+  '正官':'官殺','七殺':'官殺',
+  '正印':'印星','偏印':'印星',
+  '日主':null
+};
+
+const PERSONALITY_BASE = {
+  '甲':'甲木如參天大樹，性格正直、積極進取，天生具有領導欲望與開創精神，做事有原則、講求名分地位。缺點是有時較為固執己見，一旦認定的事不容易妥協，也可能因為過於直接而不自覺得罪人。',
+  '乙':'乙木如花草藤蔓，性格柔韌而富彈性，善於察言觀色與人際協調，心思細膩、審美敏銳。缺點是遇壓力容易多想、猶豫不決，也較依賴他人給予的環境支持才能發揮所長。',
+  '丙':'丙火如太陽，性格熱情開朗、光明磊落，天生具有感染力與表現欲，樂於分享、行動力強。缺點是有時較缺乏耐性，容易三分鐘熱度，情緒起伏也可能較外顯、藏不住。',
+  '丁':'丁火如燭光爐火，性格溫和細膩、重情重義，觀察力與感受力強，外表隨和但內心自有主見與韌性。缺點是容易替他人著想過了頭，習慣自己扛壓力、不輕易求助，長期下來容易累積委屈。',
+  '戊':'戊土如高山厚土，性格穩重踏實、包容力強，值得信賴、責任感重，做事講求按部就班。缺點是有時較為保守固執，不易變通，面對新事物的接受度也可能較慢。',
+  '己':'己土如田園沃土，性格溫厚隨和、善於配合與滋養他人，顧全大局、重視和諧。缺點是容易過度遷就他人而委屈自己，也可能因為不擅長拒絕而累積壓力。',
+  '庚':'庚金如刀劍礦石，性格果斷剛毅、重義氣講原則，行動力與執行力強，是非分明。缺點是有時稍嫌強勢、不易妥協，說話直接可能讓人感到有壓迫感。',
+  '辛':'辛金如珠玉首飾，性格細緻講究、重視質感與形象，內心敏銳、審美與辨別力強。缺點是容易對自己與他人都過於嚴苛，追求完美之下也可能較敏感、易受傷。',
+  '壬':'壬水如江河大海，性格聰明機靈、包容力強，喜歡自由、思路開闊，適應力強。缺點是想法與情緒起伏較大，有時流於變化多端、不易捉摸，定性稍嫌不足。',
+  '癸':'癸水如雨露細流，性格心思縝密、直覺敏銳，善於謀劃與觀察細節，內斂而深沉。缺點是容易多疑、想得太多，遇事容易鑽牛角尖，也較不擅長直接表達情緒。'
+};
+const GROUP_TRAIT = {
+  '比劫':'原局比肩劫財偏旺，代表自我意識強、獨立性高，重視自主與平等，不喜歡被命令或控制，人際上朋友多、行動力強，但也要留意過度堅持己見或因競爭心而破財耗力。',
+  '食傷':'原局食神傷官偏旺，代表表達欲與創造力強，聰明有想法、才華容易外顯，適合需要創意或溝通表達的領域，但要留意言多必失，或因為想法太多、standards過高而挑剔身邊人事物。',
+  '財星':'原局財星偏旺，代表務實、重視現實成果與效率，理財及執行能力較佳，做事講求實際回報，但也要留意過於現實而忽略情感面的經營，或因忙於累積資源而疏於休息。',
+  '官殺':'原局官殺偏旺，代表責任感強、自我要求高，做事謹慎守規矩，重視社會評價與角色責任，但壓力承受度需要特別留意，容易替別人扛責任而委屈自己，長期下來身心較易緊繃。',
+  '印星':'原局印星偏旺，代表重視內在學習與精神安全感，善於吸收知識、依賴感受與直覺，重視傳承與被理解，但也要留意過度依賴他人肯定，或想得太多、行動力相對不足。'
+};
+
+const ADVICE_BY_ELEM = {
+  '木':{color:'綠色、青色系',dir:'東方',career:'教育、出版、企劃、農林園藝、成長型產業',life:'多接觸大自然與閱讀學習，規律作息有助養肝舒壓，適合培養一項需要耐心累積的興趣。'},
+  '火':{color:'紅色、紫色、橙色系',dir:'南方',career:'行銷、媒體演藝、餐飲、能源、業務類工作',life:'保持適度運動釋放能量，避免熬夜燥熱，學習在熱情之餘留一點餘裕給自己休息。'},
+  '土':{color:'黃色、棕色、卡其色系',dir:'中央、居家附近',career:'房地產、農牧、顧問、行政管理、穩定型工作',life:'建立規律的生活節奏與作息，適度培養彈性，避免過於固守既有做法而錯失機會。'},
+  '金':{color:'白色、金色、銀色系',dir:'西方',career:'金融、法律、機械科技、品質管理、精品產業',life:'訓練果斷決策的能力，同時保持社交彈性，避免對自己與他人要求過於嚴苛。'},
+  '水':{color:'黑色、藍色系',dir:'北方',career:'貿易物流、傳播、旅遊、流動性高的產業',life:'保持思路彈性、多元學習，同時建立一些穩定的生活錨點，避免想法變化太快而定不下心。'}
+};
+
+const DAYUN_THEME = {
+  '比劫':'自主性與行動力提升，人脈與合作機會增多，適合拓展人際或創業合作，但需留意競爭、破財或與人爭執的狀況。',
+  '食傷':'創造力、表達力與學習意願提升，適合學習新技能、發展副業或轉換跑道，但需留意言多必失、過度理想化。',
+  '財星':'財務與現實面較有機會，適合累積資產、拓展事業版圖，但需量入為出，避免因追求財利而忽略健康與關係經營。',
+  '官殺':'責任與壓力增加，可能面臨升遷、考試或角色轉換的考驗，是累積地位與能力的階段，但需留意健康與情緒調節。',
+  '印星':'學習運與貴人運提升，適合進修、內在成長或尋求他人指導，心境上較安穩，但要留意過度依賴他人而行動力下降。'
+};
+
+function analyzeElementCounts(bz){
+  const pillars = [bz.year,bz.month,bz.day];
+  if(bz.hour) pillars.push(bz.hour);
+  const counts = {'木':0,'火':0,'土':0,'金':0,'水':0};
+  pillars.forEach(p=>{ counts[GAN_ELEM[p.gan]]++; counts[ZHI_ELEM[p.zhi]]++; });
+  return counts;
+}
+
+function analyzeStrengthRaw(bz){
+  const pillars = [
+    {p:bz.year, dayCol:false},
+    {p:bz.month, dayCol:false},
+    {p:bz.day, dayCol:true},
+  ];
+  if(bz.hour) pillars.push({p:bz.hour, dayCol:false});
+  const dayElem = GAN_ELEM[bz.day.gan];
+  let helpCount=0, drainCount=0;
+  pillars.forEach(({p,dayCol})=>{
+    if(dayCol){ // 日柱只算地支
+      const el = ZHI_ELEM[p.zhi];
+      if(el===dayElem || el===GENERATED_BY[dayElem]) helpCount++; else drainCount++;
+      return;
+    }
+    [GAN_ELEM[p.gan], ZHI_ELEM[p.zhi]].forEach(el=>{
+      if(el===dayElem || el===GENERATED_BY[dayElem]) helpCount++; else drainCount++;
+    });
+  });
+  let strength, favorElems, avoidElems;
+  if(helpCount > drainCount){
+    strength='身強';
+    favorElems=[GENERATES[dayElem], CONTROLS[dayElem], CONTROLLED_BY[dayElem]];
+    avoidElems=[dayElem, GENERATED_BY[dayElem]];
+  } else if(drainCount > helpCount){
+    strength='身弱';
+    favorElems=[dayElem, GENERATED_BY[dayElem]];
+    avoidElems=[GENERATES[dayElem], CONTROLS[dayElem], CONTROLLED_BY[dayElem]];
+  } else {
+    strength='中和';
+    favorElems=[dayElem];
+    avoidElems=[];
+  }
+  return {strength, helpCount, drainCount, favorElems:[...new Set(favorElems)], avoidElems:[...new Set(avoidElems)]};
+}
+
+function dominantGroup(bz){
+  const others = [bz.year.gan, bz.month.gan];
+  const zhis = [bz.year.zhi, bz.month.zhi, bz.day.zhi];
+  if(bz.hour){ others.push(bz.hour.gan); zhis.push(bz.hour.zhi); }
+  const tally = {'比劫':0,'食傷':0,'財星':0,'官殺':0,'印星':0};
+  others.forEach(g=>{ const tg=tenGodGan(bz.day.gan,g); const grp=TG_GROUP[tg]; if(grp) tally[grp]++; });
+  zhis.forEach(z=>{ const tg=tenGodZhi(bz.day.gan,z); const grp=TG_GROUP[tg]; if(grp) tally[grp]++; });
+  let best=null, bestCount=-1;
+  Object.keys(tally).forEach(k=>{ if(tally[k]>bestCount){ best=k; bestCount=tally[k]; } });
+  return {tally, best, bestCount};
+}
+
+const STEM_HE = {
+  '甲己':'土','己甲':'土',
+  '乙庚':'金','庚乙':'金',
+  '丙辛':'水','辛丙':'水',
+  '丁壬':'木','壬丁':'木',
+  '戊癸':'火','癸戊':'火'
+};
+const STEM_HE_NOTE = {
+  '土':'甲己合化土：為人重承諾、腳踏實地，做事講求穩紮穩打，但也可能因此顯得較為謹慎保守。',
+  '金':'乙庚合化金：做事果斷俐落、重紀律與效率，行事風格偏向理性務實。',
+  '水':'丙辛合化水：外冷內熱，情感豐富但表達含蓄，善於變通與察言觀色。',
+  '木':'丁壬合化木：重感情、富有理想性與浪漫特質，人際上容易因情感因素而受牽絆，需留意分寸拿捏。',
+  '火':'戊癸合化火：外表沉穩內心熱情，重視形象與長遠規劃，情感細水長流。'
+};
+const ZHI_LIUHE_LIST = [
+  {pair:['子','丑'], elem:'土', note:'子丑合，代表人際與情感上的黏著協調，遇事容易妥協退讓以求和諧。'},
+  {pair:['寅','亥'], elem:'木', note:'寅亥合，帶有合作與成長的意味，容易因合作對象而激發新的發展方向。'},
+  {pair:['卯','戌'], elem:'火', note:'卯戌合，情感濃烈、吸引力強，但也容易因情感糾葛耗費心神。'},
+  {pair:['辰','酉'], elem:'金', note:'辰酉合，做事講求規矩與效率，人際上重視信用與承諾。'},
+  {pair:['巳','申'], elem:'水', note:'巳申合（合中帶刑），關係看似親近卻暗藏波折，需留意表面和諧下的潛在摩擦。'},
+  {pair:['午','未'], elem:'土', note:'午未合，性格上外顯熱情但內在務實，情感與現實面能兼顧。'}
+];
+const ZHI_SANHE_LIST = [
+  {set:['申','子','辰'], elem:'水', name:'三合水局', note:'地支三合成水局，行動力與應變智慧大幅增強，個性上更顯機靈善變、人脈廣闊。'},
+  {set:['亥','卯','未'], elem:'木', name:'三合木局', note:'地支三合成木局，成長性與企劃力大幅增強，個性上更顯積極、有理想抱負。'},
+  {set:['寅','午','戌'], elem:'火', name:'三合火局', note:'地支三合成火局，熱情與表現欲大幅增強，個性上更顯外向、感染力十足。'},
+  {set:['巳','酉','丑'], elem:'金', name:'三合金局', note:'地支三合成金局，決斷力與原則性大幅增強，個性上更顯果斷、重義氣。'}
+];
+const ZHI_SANHUI_LIST = [
+  {set:['寅','卯','辰'], elem:'木', name:'三會東方木', note:'地支三會東方木，整股氣勢集中於木，個性上企圖心強、成長動能十足。'},
+  {set:['巳','午','未'], elem:'火', name:'三會南方火', note:'地支三會南方火，整股氣勢集中於火，個性上熱情外放、行動積極。'},
+  {set:['申','酉','戌'], elem:'金', name:'三會西方金', note:'地支三會西方金，整股氣勢集中於金，個性上意志堅定、講求效率與原則。'},
+  {set:['亥','子','丑'], elem:'水', name:'三會北方水', note:'地支三會北方水，整股氣勢集中於水，個性上思慮深遠、善於謀劃佈局。'}
+];
+
+function analyzeCombinations(bz){
+  const pillars = [
+    {name:'年', gan:bz.year.gan, zhi:bz.year.zhi},
+    {name:'月', gan:bz.month.gan, zhi:bz.month.zhi},
+    {name:'日', gan:bz.day.gan, zhi:bz.day.zhi},
+  ];
+  if(bz.hour) pillars.push({name:'時', gan:bz.hour.gan, zhi:bz.hour.zhi});
+
+  const results = { stemHe:[], zhiLiuHe:[], zhiSanHe:[], zhiSanHui:[] };
+
+  for(let i=0;i<pillars.length-1;i++){
+    const a = GAN[pillars[i].gan], b = GAN[pillars[i+1].gan];
+    const key = a+b;
+    if(STEM_HE[key]){
+      results.stemHe.push({ pos:`${pillars[i].name}柱與${pillars[i+1].name}柱`, chars:a+b, elem:STEM_HE[key] });
+    }
+  }
+
+  const zhiChars = pillars.map(p=>ZHI[p.zhi]);
+  for(let i=0;i<pillars.length;i++){
+    for(let j=i+1;j<pillars.length;j++){
+      const set2 = [zhiChars[i], zhiChars[j]].sort().join('');
+      ZHI_LIUHE_LIST.forEach(item=>{
+        const key = [...item.pair].sort().join('');
+        if(key===set2){
+          results.zhiLiuHe.push({ pos:`${pillars[i].name}柱與${pillars[j].name}柱`, chars:zhiChars[i]+zhiChars[j], elem:item.elem, note:item.note });
+        }
+      });
+    }
+  }
+
+  const uniqueZhi = [...new Set(zhiChars)];
+  ZHI_SANHE_LIST.forEach(item=>{ if(item.set.every(z=>uniqueZhi.includes(z))) results.zhiSanHe.push(item); });
+  ZHI_SANHUI_LIST.forEach(item=>{ if(item.set.every(z=>uniqueZhi.includes(z))) results.zhiSanHui.push(item); });
+
+  return results;
+}
+
+const TEZHONG_NAME = {'木':'曲直格','火':'炎上格','土':'稼穡格','金':'從革格','水':'潤下格'};
+const CONG_RUO_NAME = {'食傷':'從兒格','財星':'從財格','官殺':'從殺格'};
+
+function hasBureauFor(bz, elem){
+  const zhiChars = [ZHI[bz.year.zhi], ZHI[bz.month.zhi], ZHI[bz.day.zhi]];
+  if(bz.hour) zhiChars.push(ZHI[bz.hour.zhi]);
+  const uniqueZhi = new Set(zhiChars);
+  return ZHI_SANHE_LIST.concat(ZHI_SANHUI_LIST).some(item => item.elem===elem && item.set.every(z=>uniqueZhi.has(z)));
+}
+
+// 地支藏干表（本氣在前）
+const HIDDEN_STEMS = [
+  [9],        // 子：癸
+  [5,9,7],    // 丑：己癸辛
+  [0,2,4],    // 寅：甲丙戊
+  [1],        // 卯：乙
+  [4,1,9],    // 辰：戊乙癸
+  [2,6,4],    // 巳：丙庚戊
+  [3,5],      // 午：丁己
+  [5,3,1],    // 未：己丁乙
+  [6,8,4],    // 申：庚壬戊
+  [7],        // 酉：辛
+  [4,7,3],    // 戌：戊辛丁
+  [8,0]       // 亥：壬甲
+];
+// 十干「祿」所在地支（臨官位）
+const LU_ZHI = [2,3,5,6,5,6,8,9,11,0]; // 甲乙丙丁戊己庚辛壬癸 對應的祿地支索引
+// 陽干「羊刃」所在地支（帝旺位，僅甲丙戊庚壬有羊刃）
+const REN_ZHI = {0:3, 2:6, 4:6, 6:9, 8:0};
+
+const TEN_GOD_TO_FORMAT = {
+  '正官':'正官格','七殺':'七殺格','正財':'正財格','偏財':'偏財格',
+  '食神':'食神格','傷官':'傷官格','正印':'正印格','偏印':'偏印格',
+  '比肩':'比肩格','劫財':'劫財格'
+};
+const FORMAT_DESC = {
+  '正官格':'正官格重視名譽、責任與體制內的發展，做事按部就班、重視分寸，是傳統上公認四平八穩的格局之一。',
+  '七殺格':'七殺格（偏官格）魄力十足、敢於承擔壓力與挑戰，適合競爭性強或需要決斷力的環境，但也要留意情緒與健康上的耗損。',
+  '正財格':'正財格務實勤懇、重視穩定的收入與累積，做事按部就班，理財與經營能力普遍受到肯定。',
+  '偏財格':'偏財格靈活變通、善於掌握機會財與人脈資源，行事較有彈性與冒險精神，但也要留意財來財去、不易守成。',
+  '食神格':'食神格個性溫和、重視生活品味與享受，才華容易透過創作、飲食、藝術等領域展現，福氣與人緣較旺。',
+  '傷官格':'傷官格聰明有才華、表現欲強，善於表達與創新，但也容易恃才傲物、不喜受拘束，人際上要留意言語分寸。',
+  '正印格':'正印格重視學習、傳承與內在修養，個性穩重善良、有貴人緣，適合需要專業知識或教育培育的領域。',
+  '偏印格':'偏印格思維獨特、直覺敏銳，對冷門或專精的領域容易鑽研出成果，但也較孤僻，不喜隨波逐流。',
+  '建祿格':'建祿格代表日主生於本氣通根之月，自身根基深厚、獨立自主性強，一生較能白手起家、憑自己的實力站穩腳步。',
+  '羊刃格':'羊刃格代表日主極為剛強、行動力十足，個性上敢衝敢拚、不畏挑戰，但脾氣也較剛烈衝動，需留意意外傷害與人際衝突。',
+  '比肩格':'比肩格代表日主根基深厚、自主性強，重視平等與自我價值的實現，人際上重義氣但也可能較固執。',
+  '劫財格':'劫財格代表日主根基深厚但較易與人競爭比較，行動力強、重視人脈，但也要留意財務上的破耗與人際上的爭執。'
+};
+
+const KUIGANG_SET = ['庚辰','庚戌','壬辰','戊戌'];
+const JINSHEN_SET = ['乙丑','己巳','癸酉'];
+
+function analyzeSpecialTags(bz){
+  const tags = [];
+  const dayGZ = GAN[bz.day.gan]+ZHI[bz.day.zhi];
+  if(KUIGANG_SET.includes(dayGZ)){
+    tags.push({ name:'魁罡格', note:'魁罡格：日柱為庚辰、庚戌、壬辰或戊戌，個性上聰明果斷、做事有魄力，善於掌握大局；但個性也較剛強極端，一旦運勢不順時波動起伏較大，需要特別留意情緒管理。' });
+  }
+  if(bz.hour && (bz.day.gan===0 || bz.day.gan===5)){ // 日主甲或己
+    const hourGZ = GAN[bz.hour.gan]+ZHI[bz.hour.zhi];
+    if(JINSHEN_SET.includes(hourGZ)){
+      tags.push({ name:'金神格', note:'金神格：日主甲或己，時柱落在乙丑、己巳或癸酉，個性上意志堅定、行事果決，帶有一股不服輸的剛毅之氣；傳統上認為此格宜有火來調候制衡，人生際遇也較容易大起大落。' });
+    }
+  }
+  return tags;
+}
+
+function determineMonthOrderPattern(bz){
+  const dayGanIdx = bz.day.gan;
+  const monthZhiIdx = bz.month.zhi;
+
+  if(monthZhiIdx===LU_ZHI[dayGanIdx]){
+    return { pattern:'建祿格', desc:FORMAT_DESC['建祿格'] };
+  }
+  if(REN_ZHI[dayGanIdx]!==undefined && monthZhiIdx===REN_ZHI[dayGanIdx]){
+    return { pattern:'羊刃格', desc:FORMAT_DESC['羊刃格'] };
+  }
+  const hidden = HIDDEN_STEMS[monthZhiIdx];
+  const candidates = [bz.year.gan, bz.month.gan];
+  if(bz.hour) candidates.push(bz.hour.gan);
+  let chosenGan = hidden.find(h => h!==dayGanIdx && candidates.includes(h));
+  if(chosenGan===undefined) chosenGan = hidden[0];
+  const tg = tenGodGan(dayGanIdx, chosenGan);
+  const patName = TEN_GOD_TO_FORMAT[tg] || '正格';
+  return { pattern:patName, desc:FORMAT_DESC[patName] || null };
+}
+
+function analyzePattern(bz){
+  const sa = analyzeStrengthRaw(bz);
+  const dg = dominantGroup(bz);
+  const dayElem = GAN_ELEM[bz.day.gan];
+  const counts = analyzeElementCounts(bz);
+  const officerElem = CONTROLLED_BY[dayElem]; // 克我者＝官殺
+  const officerCount = counts[officerElem];
+  const bureau = hasBureauFor(bz, dayElem);
+
+  const base = { strength: sa.strength, helpCount:sa.helpCount, drainCount:sa.drainCount, specialTags: analyzeSpecialTags(bz) };
+
+  if(sa.helpCount===0 && sa.drainCount>0){
+    const subName = (dg.best && CONG_RUO_NAME[dg.best]) ? CONG_RUO_NAME[dg.best] : '從弱格';
+    return {
+      ...base,
+      type:'從弱', pattern:subName,
+      favorElems:[...new Set([GENERATES[dayElem], CONTROLS[dayElem], CONTROLLED_BY[dayElem]])],
+      avoidElems:[...new Set([dayElem, GENERATED_BY[dayElem]])],
+      desc:`原局幾乎不見比劫、印星幫身，日主呈現「棄命從弱」之勢，順勢依附於全局最旺的「${dg.best||'外力'}」之氣，稱為「${subName}」。此格喜順勢而為，忌逆勢而為──一旦運勢中出現大量比劫或印星來幫身，反而會與原局的「從勢」互相牴觸，稱為「破格」，容易招致較大的波動與壓力。`
+    };
+  }
+  // 專旺（含炎上、曲直、稼穡、從革、潤下）：關鍵在於「官殺」（克我者）是否透出，
+  // 而非單純看食傷、財星是否出現──食傷財星屬於日主自己生剋出去的「洩秀」，
+  // 傳統上稱為「有情」，通常不影響專旺格的成立，真正會破格的是克我的官殺。
+  if(officerCount===0 && sa.helpCount>0 && (sa.helpCount > sa.drainCount || bureau)){
+    const subName = TEZHONG_NAME[dayElem] || '專旺格';
+    const bureauNote = bureau ? '，地支更組成同氣三合／三會局，聲勢完整' : '';
+    const drainNote = sa.drainCount>0 ? `雖然柱中仍可見食傷或財星（洩秀），但由於完全不見克我的官殺「${officerElem}」，不影響專旺格局的成立` : `柱中幾乎不見剋洩耗的成分`;
+    return {
+      ...base,
+      type:'專旺', pattern:subName,
+      favorElems:[...new Set([dayElem, GENERATED_BY[dayElem]])],
+      avoidElems:[...new Set([CONTROLLED_BY[dayElem]])],
+      desc:`原局「${dayElem}」氣勢極旺${bureauNote}，${drainNote}，形成「一行獨旺」的專旺格局，稱為「${subName}」。此格個性上氣勢磅礴、自成一格，優點是專注力與意志力極強；最忌大運流年出現剋我的「${officerElem}」（官殺）來直接對抗此氣勢，容易引發較大的衝突與挑戰，需要特別留意；食傷、財星則影響較小，甚至可視為秀氣外露、才華得以發揮的助力。`
+    };
+  }
+
+  // 正格：依月令（月支藏干透干與否）決定十神格局
+  const mp = determineMonthOrderPattern(bz);
+  return { ...base, type:'正格', pattern:mp.pattern, favorElems:sa.favorElems, avoidElems:sa.avoidElems, desc:mp.desc };
+}
+
+
+// 格局 × 身強身弱 的交互文字（同一格局在身強／身弱下會呈現不同樣貌，而非固定套話）
+const PATTERN_STRENGTH_TEXT = {
+  '正官格': {
+    strong:'身強而行正官格，代表你有足夠的實力去承接責任與體制的要求，官星真正為你所用，表現出穩重可靠、令人信服的領導特質，也清楚分寸與界線在哪裡。',
+    weak:'身弱而行正官格，責任與外在期待對你來說負擔較重，容易因為想符合他人標準或體制要求而感到壓力沉重，需要多一些學習與支持來化解這份負荷，才不會過度勉強自己。'
+  },
+  '七殺格': {
+    strong:'身強而行七殺格，代表你天生有足夠的能量去駕馭壓力與挑戰，七殺為你所用，展現出果敢、有魄力、敢衝敢拚的一面，越是艱難的環境反而越能激發你的鬥志。',
+    weak:'身弱而行七殺格，壓力與挑戰對你來說負荷偏重，容易因為外在的競爭或要求而感到緊繃、身心疲憊，需要留意適時求助與休息，避免長期硬撐。'
+  },
+  '正財格': {
+    strong:'身強而行正財格，代表你有足夠的能力去駕馭財富與現實資源，做事務實穩健、按部就班，是能夠靠自己一步步累積成果的類型。',
+    weak:'身弱而行正財格，現實面的責任與付出對你來說負擔較重，容易為了顧及生活現實或他人需求而透支自己，需要留意量力而為，別把自己逼得太緊。'
+  },
+  '偏財格': {
+    strong:'身強而行偏財格，代表你善於掌握機會與人脈資源，行事靈活、敢於冒險，能把握住稍縱即逝的機會財，人生際遇也較為多采多姿。',
+    weak:'身弱而行偏財格，面對機會與誘惑時容易消耗過多心力去追逐，財來財去、不易守成，建議把重心放在少數真正值得投入的機會上，而非四處出擊。'
+  },
+  '食神格': {
+    strong:'身強而行食神格，代表你有充足的能量去發揮創造力與才華，個性溫和從容、重視生活品味，才華容易透過作品或成果自然而然地展現出來。',
+    weak:'身弱而行食神格，容易因為想面面俱到、追求完美而消耗過多心力，才華雖有但續航力較弱，需要留意適度休息、別把自己逼得太緊繃。'
+  },
+  '傷官格': {
+    strong:'身強而行傷官格，代表你有足夠的自信與能量去表現自己，聰明靈活、創意十足，敢於挑戰既有規則，個人色彩鮮明、不喜歡被制式框架綁住。',
+    weak:'身弱而行傷官格，內心的想法與表達欲雖然強烈，但能量續航力較弱，容易因為說得多、做得累而身心俱疲，也可能因言語直接而不自覺得罪人，需要多留意分寸與休息。'
+  },
+  '正印格': {
+    strong:'身強而行正印格，代表你在學習與內在修養上有充分的餘裕去深耕，個性穩重善良、重視傳承，容易成為值得信賴的知識型人物。',
+    weak:'身弱而行正印格，個性上較依賴他人的肯定與支持才能建立安全感，容易想得多、行動力相對不足，需要練習多一點主動與自信，別事事等待別人給答案。'
+  },
+  '偏印格': {
+    strong:'身強而行偏印格，代表你有足夠的心力去鑽研冷門或專精的領域，思維獨特、直覺敏銳，容易在小眾但深刻的領域做出成果。',
+    weak:'身弱而行偏印格，容易顯得多疑、想得太多，內心敏感卻不易對外表達，需要留意別讓過度的胡思亂想耗損了自己的行動力。'
+  },
+  '建祿格': {
+    strong:'身強而行建祿格，代表你根基深厚、獨立自主，能夠完全靠自己的實力站穩腳步，個性上也顯得沉穩、有自信，不太需要依賴外力。',
+    weak:'雖行建祿格、本身有一定根基，但整體命局仍偏弱，顯示你獨立自主的性格明顯，實際執行上仍需要多一些外在資源或人脈的協助，才能把根基的優勢真正發揮出來。'
+  },
+  '羊刃格': {
+    strong:'身強而行羊刃格，代表你行動力與意志力都非常強悍，敢衝敢拚、不畏挑戰，是天生的行動派，但也要格外留意脾氣與衝動帶來的人際或意外風險。',
+    weak:'雖行羊刃格，但整體命局偏弱，顯示你內心其實渴望有羊刃般的爆發力與行動力，卻常常心有餘而力不足，容易在硬撐與力不從心之間拉扯，建議務實評估自己的能量再行動。'
+  },
+  '比肩格': {
+    strong:'身強而行比肩格，代表自我意識強、獨立性高，重視公平與自主，行動力十足，但也要留意過於堅持己見而顯得固執。',
+    weak:'身弱而略帶比肩，代表你渴望獨立自主，但整體能量偏弱，容易在想靠自己與力不從心之間拉扯，適度尋求他人的支持並不是弱點。'
+  },
+  '劫財格': {
+    strong:'身強而行劫財格，代表行動力強、人脈廣闊，但競爭意識也重，容易因為與人比較而消耗心力，也要留意財務上的破耗。',
+    weak:'身弱而略帶劫財，代表你雖然渴望在人群中證明自己，但整體能量有限，容易因為過度爭取或比較而透支，建議把心力放在真正重要的目標上。'
+  }
+};
+const FORMAT_TO_GROUP = {
+  '正官格':'官殺','七殺格':'官殺','正財格':'財星','偏財格':'財星',
+  '食神格':'食傷','傷官格':'食傷','正印格':'印星','偏印格':'印星',
+  '建祿格':'比劫','羊刃格':'比劫','比肩格':'比劫','劫財格':'比劫'
+};
+
+function synthesizePersonality(bz, pat, combos, counts, dg, missing){
+  const dayGan = GAN[bz.day.gan];
+  const paras = [];
+
+  // 第一段：日主本質
+  paras.push(PERSONALITY_BASE[dayGan]);
+
+  // 第二段：格局 × 身強身弱 的交互表現（特殊格局則沿用原本的從弱/專旺敘述）
+  if(pat.type!=='正格'){
+    paras.push(pat.desc + (pat.type==='從弱'
+      ? '這種「順勢而為」的性格傾向，會讓你在個性上比一般命盤更加彈性配合、隨遇而安，但也容易缺乏自我主張。'
+      : '這種「一行獨旺」的性格傾向，會讓你比一般命盤更加自成一格、意志堅定，但也可能較固執、不易接受相左的意見。'));
+  } else {
+    const key = pat.strength==='身強' ? 'strong' : 'weak';
+    const text = (PATTERN_STRENGTH_TEXT[pat.pattern] && PATTERN_STRENGTH_TEXT[pat.pattern][key])
+      || GROUP_TRAIT[FORMAT_TO_GROUP[pat.pattern]] || '';
+    paras.push(text);
+    // 若全局主導十神與格局本身的十神類別不同，代表命盤中還有另一股不可忽視的力量在拉扯，一併點出
+    const patGroup = FORMAT_TO_GROUP[pat.pattern];
+    if(dg.best && dg.best!==patGroup && dg.bestCount>0){
+      paras.push(`不過綜觀全局，你命盤中真正分量最重的其實是「${dg.best}」的力量（${GROUP_TRAIT[dg.best]}），這股力量與月令${pat.pattern}的特質同時並存，會讓你的性格多一層複雜度：對外表現的可能是${pat.pattern}的樣子，但內在真正的驅動力更接近${dg.best}的傾向，兩者拉扯之下，反而讓你顯得比單一格局的人更有彈性、也更難被一眼看穿。`);
+    }
+  }
+
+  // 第三段：合化與缺五行，並依喜忌判斷這股力量對此人是助力還是需要留意的地方
+  const comboElems = [];
+  combos.stemHe.forEach(c=>comboElems.push(c.elem));
+  combos.zhiLiuHe.forEach(c=>comboElems.push(c.elem));
+  combos.zhiSanHe.forEach(c=>comboElems.push(c.elem));
+  combos.zhiSanHui.forEach(c=>comboElems.push(c.elem));
+  if(comboElems.length){
+    const favorHits = comboElems.filter(e=>pat.favorElems.includes(e));
+    const avoidHits = comboElems.filter(e=>pat.avoidElems.includes(e));
+    let comboSentence = '命盤中另見天干地支合化的組合（詳見上方「格局與合化分析」）';
+    if(favorHits.length && !avoidHits.length){
+      comboSentence += `，而且合化出的「${[...new Set(favorHits)].join('、')}」正好是你命盤的喜用五行，這股牽絆對你來說反而是一種助力，讓對應的性格特質更容易發揮出來、也更容易得到外在環境的呼應。`;
+    } else if(avoidHits.length && !favorHits.length){
+      comboSentence += `，但合化出的「${[...new Set(avoidHits)].join('、')}」剛好是你命盤的忌神，這股牽絆對你來說較偏向需要留意的拉力，容易在相關的人際或情感課題上耗費較多心神，需要練習適度抽離、不要被牽著走。`;
+    } else {
+      comboSentence += `，這類合化會讓對應五行的特質更加突出，具體是助力還是負擔，要看實際運勢與時機而定，可對照上方分析參考。`;
+    }
+    paras.push(comboSentence);
+  }
+  if(missing.length){
+    const missingIsAvoid = missing.every(e=>pat.avoidElems.includes(e));
+    const missingIsFavor = missing.some(e=>pat.favorElems.includes(e));
+    let missingSentence = `原局五行中缺少「${missing.join('、')}」`;
+    if(missingIsFavor){
+      missingSentence += `，而其中剛好包含你命盤的喜用五行，這部分的特質在你身上會相對不明顯，也是你可以有意識在生活中補強的方向，補上之後性格與運勢的發展都會更順一些。`;
+    } else if(missingIsAvoid){
+      missingSentence += `，不過這些剛好都是你命盤的忌神，缺少反而讓整體格局更加乾淨純粹，不算是需要特別彌補的缺口。`;
+    } else {
+      missingSentence += `，這部分的特質在你身上會相對不明顯，可依自身喜好決定是否要在生活中適度補強。`;
+    }
+    paras.push(missingSentence);
+  }
+
+  return paras.map(p=>`<p class="block">${p}</p>`).join('');
+}
+
+function renderResult(bz, gender){
+  // 由右至左：時 日 月 年 => DOM 由左至右排列為 時 日 月 年
+  const displayOrder = [
+    {name:'時柱', pillar:bz.hour, isDay:false},
+    {name:'日柱', pillar:bz.day, isDay:true},
+    {name:'月柱', pillar:bz.month, isDay:false},
+    {name:'年柱', pillar:bz.year, isDay:false},
+  ];
+
+  const pg = document.getElementById('pillarsGrid');
+  pg.innerHTML = displayOrder.map(p=>{
+    if(!p.pillar){
+      return `
+      <div class="pillar-col">
+        <div class="pillar-label">${p.name}</div>
+        <div class="tg-label">未知</div>
+        <div class="pillar-char gan" style="font-size:18px;color:var(--cream-dim);">吉時</div>
+        <div class="pillar-elem">—</div>
+        <div class="pillar-char zhi" style="visibility:hidden;">—</div>
+        <div class="pillar-elem">&nbsp;</div>
+        <div class="tg-label">&nbsp;</div>
+      </div>`;
+    }
+    const g = p.pillar.gan, z = p.pillar.zhi;
+    return `
+      <div class="pillar-col">
+        <div class="pillar-label">${p.name}</div>
+        <div class="tg-label">${p.isDay? '日主' : tenGodGan(bz.day.gan,g)}</div>
+        <div class="pillar-char gan">${GAN[g]}</div>
+        <div class="pillar-elem">${GAN_ELEM[g]}</div>
+        <div class="pillar-char zhi">${ZHI[z]}</div>
+        <div class="pillar-elem">${ZHI_ELEM[z]}</div>
+        <div class="tg-label">${tenGodZhi(bz.day.gan,z)}</div>
+      </div>`;
+  }).join('');
+  if(!bz.hourKnown){
+    document.querySelector('.read-dir').textContent = '← 由右至左閱讀：年　月　日　時（時辰未知，以年月日三柱分析）→';
+  } else {
+    document.querySelector('.read-dir').textContent = '← 由右至左閱讀：年　月　日　時 →';
+  }
+
+  document.getElementById('sealChar').textContent = GAN[bz.day.gan];
+  document.getElementById('dmTag').innerHTML =
+    `日主：<b>${GAN[bz.day.gan]}${GAN_ELEM[bz.day.gan]}</b>（${GAN_YY[bz.day.gan]?'陽':'陰'}）　生肖：${SHENGXIAO[bz.year.zhi]}`;
+
+  const counts = analyzeElementCounts(bz);
+  const maxCount = Math.max(...Object.values(counts),1);
+  document.getElementById('elemBars').innerHTML = ['木','火','土','金','水'].map(e=>`
+    <div class="elem-row">
+      <div class="elem-name">${e}</div>
+      <div class="elem-track"><div class="elem-fill" style="width:${counts[e]/maxCount*100}%;background:${ELEM_COLOR[e]}"></div></div>
+      <div class="elem-count">${counts[e]}</div>
+    </div>`).join('');
+
+  const pat = analyzePattern(bz);
+  const combos = analyzeCombinations(bz);
+
+  document.getElementById('patternBox').innerHTML =
+    `<div class="verdict" style="margin-bottom:0;">
+       身強身弱：<b style="color:var(--gold)">${pat.strength}</b>（簡易估算：幫身 ${pat.helpCount} vs 洩克 ${pat.drainCount}）<br>
+       八字格局：<b style="color:var(--gold)">${pat.pattern}</b>${pat.type==='正格' ? '（依月令十神判斷，喜忌依身強身弱訂定）' : '（特殊格局，喜忌判斷以此為準，非一般身強身弱）'}<br>
+       喜用五行：<b style="color:var(--gold)">${pat.favorElems.join('、')}</b>　${pat.avoidElems.length? '忌：'+pat.avoidElems.join('、'):''}
+     </div>
+     ${pat.desc? `<p class="block" style="margin-top:10px;">${pat.desc}</p>` : ''}
+     ${pat.specialTags.map(t=>`<p class="block" style="margin-top:10px;"><b style="color:var(--gold)">${t.name}</b>：${t.note}</p>`).join('')}`;
+
+  let comboHtml = '';
+  combos.stemHe.forEach(c=>{ comboHtml += `<p class="block"><b style="color:var(--gold)">${c.pos}天干相合</b>（${c.chars}，合化${c.elem}）：${STEM_HE_NOTE[c.elem]}</p>`; });
+  combos.zhiLiuHe.forEach(c=>{ comboHtml += `<p class="block"><b style="color:var(--gold)">${c.pos}地支六合</b>（${c.chars}）：${c.note}</p>`; });
+  combos.zhiSanHe.forEach(c=>{ comboHtml += `<p class="block"><b style="color:var(--gold)">地支${c.name}</b>（${c.set.join('')}）：${c.note}</p>`; });
+  combos.zhiSanHui.forEach(c=>{ comboHtml += `<p class="block"><b style="color:var(--gold)">地支${c.name}</b>（${c.set.join('')}）：${c.note}</p>`; });
+  document.getElementById('comboBox').innerHTML = comboHtml || '<p class="block" style="color:var(--cream-dim);">原局四柱之間未見明顯的天干五合、地支六合、三合或三會。</p>';
+
+  document.getElementById('verdictBox').innerHTML =
+    `日主 <b>${GAN_ELEM[bz.day.gan]}</b>，身強身弱為 <b>${pat.strength}</b>，八字格局為 <b>${pat.pattern}</b>。<br>
+     喜用五行：<b>${pat.favorElems.join('、')}</b>　${pat.avoidElems.length? '忌：'+pat.avoidElems.join('、'):''}`;
+
+  // 性格特質詳解：依格局、身強身弱、主導十神、合化與缺五行等因素交互合成，非固定模板拼接
+  const dg = dominantGroup(bz);
+  const missing = ['木','火','土','金','水'].filter(e=>counts[e]===0);
+  document.getElementById('personalityBox').innerHTML = synthesizePersonality(bz, pat, combos, counts, dg, missing);
+
+  // 命盤建議
+  let adviceHtml = '';
+  pat.favorElems.forEach(e=>{
+    const a = ADVICE_BY_ELEM[e];
+    adviceHtml += `<p class="block"><b style="color:var(--gold)">${e}</b>：適合色系為${a.color}，方位為${a.dir}；可留意${a.career}等領域。${a.life}</p>`;
+  });
+  document.getElementById('adviceBox').innerHTML = adviceHtml || '<p class="block">原局五行分布已屬中和，維持現有生活節奏、順勢而為即可。</p>';
+
+  // 相處建議
+  const RELATION_TEXT = {
+    '比劫':'這個命盤的人獨立性強、重視自主，身邊的人適合用「溝通討論」取代「命令要求」，給予足夠的空間與尊重，反而更能換來對方的合作與信任。',
+    '食傷':'這個命盤的人重視表達與創意，身邊的人多傾聽、少打斷，給予發揮想法的舞台，會讓彼此的互動更加順暢；同時也可以適度提醒對方言語上的分寸。',
+    '財星':'這個命盤的人務實、重視效率與實際成果，溝通時用具體的數字或方案會比空泛的情感訴求更有效，同時也別忘了提醒對方適度放慢腳步、照顧情感需求。',
+    '官殺':'這個命盤的人責任感重、習慣自己承擔壓力，身邊的人可以主動關心對方的身心狀態，適度分擔責任，避免用高壓的方式再加重對方的負擔。',
+    '印星':'這個命盤的人重視內在感受與被理解的感覺，身邊的人多給予肯定與情感支持，減少批評與否定，會讓對方更有安全感、也更願意敞開心房。'
+  };
+  let relationHtml = `<p class="block">${RELATION_TEXT[dg.best] || '整體而言，保持真誠、直接且尊重的溝通方式，是與這個命盤之人相處最重要的基礎。'}</p>`;
+  if(pat.type==='從弱'){
+    relationHtml += `<p class="block">此命盤屬於「${pat.pattern}」，個性上習慣順勢而為、配合度高，身邊的人可以多給予明確的方向與安全感，同時也要留意別讓對方一味遷就而忽略了自己真正的需求。</p>`;
+  } else if(pat.type==='專旺'){
+    relationHtml += `<p class="block">此命盤屬於「${pat.pattern}」，個性上氣勢強、主見深，身邊的人適合順著對方的節奏溝通、給予發揮的空間，避免正面硬碰硬地要求對方改變既有的做事方式。</p>`;
+  } else {
+    relationHtml += `<p class="block">日主為${GAN_ELEM[bz.day.gan]}，身強身弱屬於${pat.strength}：${pat.strength==='身弱' ? '建議身邊的人多給予支持與肯定，避免施加過多壓力或期待，讓對方有機會累積能量與自信。' : pat.strength==='身強' ? '這個人本身能量與主見已經足夠，身邊的人不需要過度呵護，反而可以坦誠地互相討論、適度提出不同意見，關係會更平等健康。' : '這個人五行相對均衡，人際互動上彈性較高，一般的真誠溝通方式大多都能適應。'}</p>`;
+  }
+  document.getElementById('relationBox').innerHTML = relationHtml;
+
+  // 大運
+  const yearYang = GAN_YY[bz.year.gan]===1;
+  const isMale = gender==='male';
+  const shun = (yearYang && isMale) || (!yearYang && !isMale);
+
+  const idx0 = bz.bounds.findIndex(b=> b.zhi===bz.month.zhi);
+  let refDate;
+  if(shun){
+    let nextIdx = idx0+1;
+    refDate = (nextIdx < bz.bounds.length) ? bz.bounds[nextIdx].date : solarTermDate(bz.baziYear+1, 2);
+  } else {
+    refDate = bz.bounds[idx0].date;
+  }
+  let diffDays = Math.abs((refDate - bz.birth) / 86400000);
+  const startYears = Math.floor(diffDays/3);
+  const remainderAfterY = diffDays - startYears*3;
+  const startMonths = Math.floor(remainderAfterY*4);
+  const remainderAfterM = remainderAfterY*4 - startMonths;
+  const startDaysRem = Math.round(remainderAfterM*30);
+
+  document.getElementById('dayunIntro').textContent =
+    `${isMale?'男':'女'}命，年干為${yearYang?'陽':'陰'}干 → 大運${shun?'順':'逆'}排　起運約：出生後 ${startYears}年${startMonths}個月${startDaysRem}天`;
+
+  const monthN = cycleIndex(bz.month.gan, bz.month.zhi);
+  const dayunList = [];
+  let cur = monthN;
+  for(let i=0;i<8;i++){
+    cur = shun ? mod(cur+1,60) : mod(cur-1,60);
+    const g = cur%10, z=cur%12;
+    dayunList.push({gan:g, zhi:z, startAge:startYears + i*10, tg: tenGodGan(bz.day.gan, g)});
+  }
+
+  // 大運分析（8步）
+  document.getElementById('dayunDetail').innerHTML = dayunList.map(dy=>{
+    const grp = TG_GROUP[dy.tg];
+    const theme = grp ? DAYUN_THEME[grp] : '此步大運天干與日主相同，代表自我意識與行動力的階段，適合專注在自身目標的累積與突破。';
+    return `<div class="dayun-detail">
+      <div class="hd"><span>${dy.startAge} - ${dy.startAge+9} 歲　${GAN[dy.gan]}${ZHI[dy.zhi]}</span><span>${dy.tg}</span></div>
+      <div class="bd">${theme}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('result').style.display = 'block';
+}
+
+let selectedGender = 'female';
+document.getElementById('btn-female').addEventListener('click', ()=>{
+  selectedGender='female';
+  document.getElementById('btn-female').classList.add('active');
+  document.getElementById('btn-male').classList.remove('active');
+});
+document.getElementById('btn-male').addEventListener('click', ()=>{
+  selectedGender='male';
+  document.getElementById('btn-male').classList.add('active');
+  document.getElementById('btn-female').classList.remove('active');
+});
+
+document.getElementById('unknownHour').addEventListener('change', (e)=>{
+  const disabled = e.target.checked;
+  document.getElementById('hh').disabled = disabled;
+  document.getElementById('mm').disabled = disabled;
+});
+
+document.getElementById('calcBtn').addEventListener('click', ()=>{
+  const y = parseInt(document.getElementById('y').value,10);
+  const m = parseInt(document.getElementById('m').value,10);
+  const d = parseInt(document.getElementById('d').value,10);
+  const hourUnknown = document.getElementById('unknownHour').checked;
+  const hh = hourUnknown ? null : parseInt(document.getElementById('hh').value,10);
+  const mm = hourUnknown ? 0 : (parseInt(document.getElementById('mm').value,10) || 0);
+  const err = document.getElementById('errMsg');
+
+  if(!y || m<1 || m>12 || !d || d<1 || d>31 || (!hourUnknown && (isNaN(hh) || hh<0 || hh>23))){
+    err.style.display='block';
+    return;
+  }
+  err.style.display='none';
+
+  try{
+    const bz = computeBaZi(y,m,d,hh,mm,selectedGender);
+    renderResult(bz, selectedGender);
+    document.getElementById('result').scrollIntoView({behavior:'smooth', block:'start'});
+  }catch(e){
+    err.textContent = '計算發生錯誤，請確認輸入的日期是否存在。';
+    err.style.display='block';
+  }
+});
+</script>
+</body>
+</html>
