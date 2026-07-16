@@ -582,16 +582,21 @@ function analyzePattern(bz){
   // 專旺（含炎上、曲直、稼穡、從革、潤下）：關鍵在於「官殺」（克我者）是否透出，
   // 而非單純看食傷、財星是否出現──食傷財星屬於日主自己生剋出去的「洩秀」，
   // 傳統上稱為「有情」，通常不影響專旺格的成立，真正會破格的是克我的官殺。
-  if(officerCount===0 && sa.helpCount>0 && (sa.helpCount > sa.drainCount || bureau)){
+  // 專旺格需「地支有三合／三會同氣局」或「生於當令月（月支與日主同五行）」兩者符合其一即可，
+  // 若兩者皆無，即使官殺為零、幫身洩克比例佔優，也只能算身強格，不能算專旺格。
+  const monthMatch = ZHI_ELEM[bz.month.zhi] === dayElem;
+  if(officerCount===0 && sa.helpCount>0 && sa.helpCount > sa.drainCount && (bureau || monthMatch)){
     const subName = TEZHONG_NAME[dayElem] || '專旺格';
-    const bureauNote = bureau ? '，地支更組成同氣三合／三會局，聲勢完整' : '';
+    const supportNote = bureau && monthMatch ? '，生於當令之月，地支更組成同氣三合／三會局，聲勢完整'
+      : bureau ? '，地支組成同氣三合／三會局，聲勢完整'
+      : '，生於當令之月，本氣當旺';
     const drainNote = sa.drainCount>0 ? `雖然柱中仍可見食傷或財星（洩秀），但由於完全不見克我的官殺「${officerElem}」，不影響專旺格局的成立` : `柱中幾乎不見剋洩耗的成分`;
     return {
       ...base,
       type:'專旺', pattern:subName,
       favorElems:[...new Set([dayElem, GENERATED_BY[dayElem]])],
       avoidElems:[...new Set([CONTROLLED_BY[dayElem]])],
-      desc:`原局「${dayElem}」氣勢極旺${bureauNote}，${drainNote}，形成「一行獨旺」的專旺格局，稱為「${subName}」。此格個性上氣勢磅礴、自成一格，優點是專注力與意志力極強；最忌大運流年出現剋我的「${officerElem}」（官殺）來直接對抗此氣勢，容易引發較大的衝突與挑戰，需要特別留意；食傷、財星則影響較小，甚至可視為秀氣外露、才華得以發揮的助力。`
+      desc:`原局「${dayElem}」氣勢極旺${supportNote}，${drainNote}，形成「一行獨旺」的專旺格局，稱為「${subName}」。此格個性上氣勢磅礴、自成一格，優點是專注力與意志力極強；最忌大運流年出現剋我的「${officerElem}」（官殺）來直接對抗此氣勢，容易引發較大的衝突與挑戰，需要特別留意；食傷、財星則影響較小，甚至可視為秀氣外露、才華得以發揮的助力。`
     };
   }
 
